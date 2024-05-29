@@ -4,18 +4,30 @@ import api from "../utils/api";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
+import Button from "react-bootstrap/Button";
+import { useNavigate } from "react-router-dom";
 
-const TodoPage = () => {
+const TodoPage = ({ user, setUser }) => {
   const [todoList, setTodoList] = useState([]);
   const [todoValue, setTodoValue] = useState("");
+  const navigate = useNavigate();
 
   const getTasks = async () => {
-    const response = await api.get("/tasks");
-    setTodoList(response.data.data);
+    try {
+      const response = await api.get("/tasks");
+      setTodoList(response.data.data);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      if (error.response && error.response.status === 401) {
+        handleLogout();
+      }
+    }
   };
+
   useEffect(() => {
     getTasks();
   }, []);
+
   const addTodo = async () => {
     try {
       const response = await api.post("/tasks", {
@@ -27,19 +39,18 @@ const TodoPage = () => {
       }
       setTodoValue("");
     } catch (error) {
-      console.log("error:", error);
+      console.error("Error adding task:", error);
     }
   };
 
   const deleteItem = async (id) => {
     try {
-      console.log(id);
       const response = await api.delete(`/tasks/${id}`);
       if (response.status === 200) {
         getTasks();
       }
     } catch (error) {
-      console.log("error", error);
+      console.error("Error deleting task:", error);
     }
   };
 
@@ -53,11 +64,37 @@ const TodoPage = () => {
         getTasks();
       }
     } catch (error) {
-      console.log("error", error);
+      console.error("Error toggling task completion:", error);
     }
   };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("token");
+    setUser(null);
+    navigate("/login");
+  };
+
   return (
     <Container>
+      <Row className="justify-content-between align-items-center mb-3">
+        <Col>
+          <h1>Todo List</h1>
+        </Col>
+        <Col xs="auto">
+          {user ? (
+            <Button onClick={handleLogout} className="button-primary">
+              Logout
+            </Button>
+          ) : (
+            <Button
+              onClick={() => navigate("/login")}
+              className="button-primary"
+            >
+              Login
+            </Button>
+          )}
+        </Col>
+      </Row>
       <Row className="add-item-row">
         <Col xs={12} sm={10}>
           <input

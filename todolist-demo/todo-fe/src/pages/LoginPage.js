@@ -7,10 +7,11 @@ import api from "../utils/api";
 import { useNavigate } from "react-router-dom";
 
 const LoginPage = ({ user, setUser }) => {
-  const [email, setEmail] = useState();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
   const handleLogin = async (event) => {
     event.preventDefault();
     try {
@@ -21,18 +22,21 @@ const LoginPage = ({ user, setUser }) => {
         api.defaults.headers["authorization"] = "Bearer " + response.data.token;
         setError("");
         navigate("/");
+      } else {
+        throw new Error(response.message);
       }
-      throw new Error(response.message);
     } catch (error) {
       setError(error.message);
     }
   };
+
   if (user) {
     return <Navigate to="/" />;
   }
+
   return (
     <div className="display-center">
-      {error && <Alert variant="danger"> {error}</Alert>}
+      {error && <Alert variant="danger">{error}</Alert>}
       <Form className="login-box" onSubmit={handleLogin}>
         <h1>로그인</h1>
         <Form.Group className="mb-3" controlId="formBasicEmail">

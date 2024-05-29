@@ -15,13 +15,16 @@ function App() {
     try {
       const storedToken = sessionStorage.getItem("token");
       if (storedToken) {
-        const response = await api.get("/user/me");
+        const response = await api.get("/user/me", {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        });
         setUser(response.data.user);
       }
     } catch (error) {
       setUser(null);
     }
   };
+
   useEffect(() => {
     getUser();
   }, []);
@@ -32,12 +35,11 @@ function App() {
         path="/"
         element={
           <PrivateRoute user={user}>
-            <TodoPage />
+            <TodoPage user={user} setUser={setUser} />
           </PrivateRoute>
         }
       />
       <Route path="/register" element={<RegisterPage />} />
-
       <Route
         path="/login"
         element={<LoginPage user={user} setUser={setUser} />}
