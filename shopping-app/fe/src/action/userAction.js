@@ -5,14 +5,24 @@ import * as commonTypes from "../constants/commonUI.constants";
 const loginWithToken = () => async (dispatch) => {
   try {
     dispatch({ type: types.LOGIN_WITH_TOKEN_REQUEST });
-    const response = await api.get("/user/me");
+
+    const token = sessionStorage.getItem("token");
+    if (!token) throw new Error("No token found");
+
+    const response = await api.get("/user/me", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
     if (response.status !== 200) throw new Error(response.error);
+
     dispatch({
-      types: types.LOGIN_WITH_TOKEN_SUCCESS,
+      type: types.LOGIN_WITH_TOKEN_SUCCESS,
       payload: response.data,
     });
   } catch (error) {
-    dispatch({ type: types.LOGIN_WITH_TOKEN_FAIL, payload: error });
+    dispatch({ type: types.LOGIN_WITH_TOKEN_FAIL, payload: error.message });
     dispatch(logout());
   }
 };

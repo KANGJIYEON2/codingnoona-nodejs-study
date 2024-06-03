@@ -12,6 +12,7 @@ const AppLayout = ({ children }) => {
   const location = useLocation();
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.user);
+
   useEffect(() => {
     dispatch(userActions.loginWithToken());
   }, []);
