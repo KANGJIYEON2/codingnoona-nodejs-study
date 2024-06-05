@@ -13,6 +13,7 @@ const AdminProduct = () => {
   const dispatch = useDispatch();
   const {
     products: productList,
+    totalPageNum,
     loading,
     error,
   } = useSelector((state) => state.product);
@@ -37,11 +38,16 @@ const AdminProduct = () => {
   ];
 
   useEffect(() => {
-    dispatch(productActions.getProductList());
-  }, [dispatch]);
+    dispatch(productActions.getProductList({ ...searchQuery }));
+  }, [query]);
 
   useEffect(() => {
-    // 검색어나 페이지가 바뀌면 url 바꿔주기
+    if (searchQuery.name === "") {
+      delete searchQuery.name;
+    }
+    const params = new URLSearchParams(searchQuery);
+    const query = params.toString();
+    navigate("?" + query);
   }, [searchQuery]);
 
   const deleteItem = (id) => {
@@ -60,6 +66,7 @@ const AdminProduct = () => {
 
   const handlePageClick = ({ selected }) => {
     // 쿼리에 페이지 값 바꿔주기
+    setSearchQuery({ ...searchQuery, page: selected + 1 });
   };
 
   return (
@@ -93,8 +100,8 @@ const AdminProduct = () => {
           nextLabel="next >"
           onPageChange={handlePageClick}
           pageRangeDisplayed={5}
-          pageCount={100}
-          forcePage={2} // 1페이지면 2임 여긴 한개씩 +1 해야함
+          pageCount={totalPageNum}
+          forcePage={searchQuery.page - 1} // 1페이지면 2임 여긴 한개씩 +1 해야함
           previousLabel="< previous"
           renderOnZeroPageCount={null}
           pageClassName="page-item"

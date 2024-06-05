@@ -8,7 +8,7 @@ import OrderTable from "../component/OrderTable";
 import * as types from "../constants/order.constants";
 import ReactPaginate from "react-paginate";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { commonUiActions } from "../action/commonUiAction";
+import "../App.css";
 
 const AdminOrderPage = () => {
   const navigate = useNavigate();
@@ -76,27 +76,24 @@ const AdminOrderPage = () => {
           data={orderList}
           openEditForm={openEditForm}
         />
-        <ReactPaginate
-          nextLabel="next >"
-          onPageChange={handlePageClick}
-          pageRangeDisplayed={5}
-          pageCount={totalPageNum}
-          forcePage={searchQuery.page - 1}
-          previousLabel="< previous"
-          renderOnZeroPageCount={null}
-          pageClassName="page-item"
-          pageLinkClassName="page-link"
-          previousClassName="page-item"
-          previousLinkClassName="page-link"
-          nextClassName="page-item"
-          nextLinkClassName="page-link"
-          breakLabel="..."
-          breakClassName="page-item"
-          breakLinkClassName="page-link"
-          containerClassName="pagination"
-          activeClassName="active"
-          className="display-center list-style-none"
-        />
+        <div className="pagination-wrap">
+          <ReactPaginate
+            breakLabel={"..."}
+            nextLabel={"next >"}
+            onPageChange={handlePageClick}
+            pageRangeDisplayed={5}
+            pageCount={totalPageNum}
+            previousLabel={"< previous"}
+            renderOnZeroPageCount={null}
+            previousClassName="page-item"
+            nextClassName="page-item"
+            breakClassName="break"
+            containerClassName="pagination"
+            pageClassName="page-item"
+            activeClassName="active"
+            disabledClassName="disabled"
+          />
+        </div>
       </Container>
 
       {open && <OrderDetailDialog open={open} handleClose={handleClose} />}

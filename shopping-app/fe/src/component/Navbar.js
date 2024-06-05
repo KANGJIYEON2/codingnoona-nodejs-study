@@ -7,8 +7,7 @@ import {
   faSearch,
   faShoppingBag,
 } from "@fortawesome/free-solid-svg-icons";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { userActions } from "../action/userAction";
 
@@ -27,19 +26,24 @@ const Navbar = ({ user }) => {
     "Sale",
     "지속가능성",
   ];
-  let [width, setWidth] = useState(0);
-  let navigate = useNavigate();
+  const [width, setWidth] = useState(0);
+  const navigate = useNavigate();
+
   const onCheckEnter = (event) => {
     if (event.key === "Enter") {
-      if (event.target.value === "") {
-        return navigate("/");
+      const searchValue = event.target.value.trim();
+      if (searchValue === "") {
+        return navigate("/?page=1");
       }
-      navigate(`?name=${event.target.value}`);
+      console.log(`Navigating to /?name=${searchValue}&page=1`);
+      navigate(`/?name=${searchValue}&page=1`);
     }
   };
+
   const logout = () => {
     dispatch(userActions.logout());
   };
+
   return (
     <div>
       {showSearchBox && (
@@ -50,7 +54,7 @@ const Navbar = ({ user }) => {
               <input
                 type="text"
                 placeholder="제품검색"
-                onKeyPress={onCheckEnter}
+                onKeyDown={onCheckEnter}
               />
             </div>
             <button
@@ -135,13 +139,13 @@ const Navbar = ({ user }) => {
             </li>
           ))}
         </ul>
-        {!isMobile && ( // admin페이지에서 같은 search-box스타일을 쓰고있음 그래서 여기서 서치박스 안보이는것 처리를 해줌
-          <div className="search-box landing-search-box ">
+        {!isMobile && (
+          <div className="search-box landing-search-box">
             <FontAwesomeIcon icon={faSearch} />
             <input
               type="text"
               placeholder="제품검색"
-              onKeyPress={onCheckEnter}
+              onKeyDown={onCheckEnter}
             />
           </div>
         )}

@@ -4,6 +4,7 @@ const initialState = {
   loading: false,
   error: "",
   products: [],
+  totalPageNum: 1,
 };
 
 function productReducer(state = initialState, action) {
@@ -15,7 +16,13 @@ function productReducer(state = initialState, action) {
     case types.PRODUCT_CREATE_SUCCESS:
       return { ...state, loading: false, error: "" };
     case types.PRODUCT_GET_SUCCESS:
-      return { ...state, loading: false, error: "", products: payload };
+      return {
+        ...state,
+        loading: false,
+        error: "",
+        products: payload.products,
+        totalPageNum: payload.totalPageNum,
+      };
     case types.PRODUCT_CREATE_FAIL:
     case types.PRODUCT_GET_FAIL:
       return { ...state, loading: false, error: payload };
