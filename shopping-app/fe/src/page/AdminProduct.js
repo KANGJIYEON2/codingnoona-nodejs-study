@@ -7,7 +7,7 @@ import NewItemDialog from "../component/NewItemDialog";
 import ReactPaginate from "react-paginate";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import ProductTable from "../component/ProductTable";
-
+import * as types from "../constants/product.constants";
 const AdminProduct = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -46,17 +46,23 @@ const AdminProduct = () => {
       delete searchQuery.name;
     }
     const params = new URLSearchParams(searchQuery);
-    const query = params.toString();
-    navigate("?" + query);
+    const queryString = params.toString();
+    navigate("?" + queryString);
   }, [searchQuery]);
+
+  const refreshProducts = () => {
+    dispatch(productActions.getProductList({ ...searchQuery }));
+  };
 
   const deleteItem = (id) => {
     // 아이템 삭제하기
+    dispatch(productActions.deleteProduct(id));
   };
 
   const openEditForm = (product) => {
-    // edit 모드로 설정하고
-    // 아이템 수정 다이얼로그 열어주기
+    setMode("edit");
+    dispatch({ type: types.SET_SELECTED_PRODUCT, payload: product });
+    setShowDialog(true);
   };
 
   const handleClickNewItem = () => {
@@ -65,7 +71,6 @@ const AdminProduct = () => {
   };
 
   const handlePageClick = ({ selected }) => {
-    // 쿼리에 페이지 값 바꿔주기
     setSearchQuery({ ...searchQuery, page: selected + 1 });
   };
 
@@ -91,7 +96,7 @@ const AdminProduct = () => {
         ) : (
           <ProductTable
             header={tableHeader}
-            data={productList || []} // productList가 undefined인 경우 빈 배열을 전달
+            data={productList || []}
             deleteItem={deleteItem}
             openEditForm={openEditForm}
           />
@@ -101,7 +106,7 @@ const AdminProduct = () => {
           onPageChange={handlePageClick}
           pageRangeDisplayed={5}
           pageCount={totalPageNum}
-          forcePage={searchQuery.page - 1} // 1페이지면 2임 여긴 한개씩 +1 해야함
+          forcePage={searchQuery.page - 1}
           previousLabel="< previous"
           renderOnZeroPageCount={null}
           pageClassName="page-item"
@@ -123,6 +128,7 @@ const AdminProduct = () => {
         mode={mode}
         showDialog={showDialog}
         setShowDialog={setShowDialog}
+        refreshProducts={refreshProducts}
       />
     </div>
   );

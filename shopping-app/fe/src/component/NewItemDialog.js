@@ -5,8 +5,6 @@ import CloudinaryUploadWidget from "../utils/CloudinaryUploadWidget";
 import { productActions } from "../action/productAction";
 import { CATEGORY, STATUS, SIZE } from "../constants/product.constants";
 import "../style/adminProduct.style.css";
-import * as types from "../constants/product.constants";
-import { commonUiActions } from "../action/commonUiAction";
 
 const InitialFormData = {
   name: "",
@@ -18,7 +16,13 @@ const InitialFormData = {
   status: "active",
   price: 0,
 };
-const NewItemDialog = ({ mode, showDialog, setShowDialog }) => {
+
+const NewItemDialog = ({
+  mode,
+  showDialog,
+  setShowDialog,
+  refreshProducts,
+}) => {
   const selectedProduct = useSelector((state) => state.product.selectedProduct);
   const { error } = useSelector((state) => state.product);
   const [formData, setFormData] = useState(
@@ -27,59 +31,57 @@ const NewItemDialog = ({ mode, showDialog, setShowDialog }) => {
   const [stock, setStock] = useState([]);
   const dispatch = useDispatch();
   const [stockError, setStockError] = useState(false);
-  console.log("stock", stock);
+
   const handleClose = () => {
-    //모든걸 초기화시키고;
-    // 다이얼로그 닫아주기
+    setShowDialog(false);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    //재고를 입력했는지 확인, 아니면 에러
     if (stock.length === 0) return setStockError(true);
-    // 재고를 배열에서 객체로 바꿔주기
     const totalStock = stock.reduce((total, item) => {
       return { ...total, [item[0]]: parseInt(item[1]) };
     }, {});
 
-    // [['M',2]] 에서 {M:2}로
     if (mode === "new") {
-      //새 상품 만들기
-      dispatch(
+      await dispatch(
         productActions.createProduct({ ...formData, stock: totalStock })
       );
       setShowDialog(false);
+      refreshProducts(); // 새로고침 없이 리스트 업데이트
     } else {
-      // 상품 수정하기
+      // 상품 수정하기 로직 추가
+      dispatch(
+        productActions.editProduct(
+          { ...formData, stock: totalStock },
+          selectedProduct._id
+        )
+      );
+      setShowDialog(false);
     }
   };
 
   const handleChange = (event) => {
-    //form에 데이터 넣어주기
     const { id, value } = event.target;
     setFormData({ ...formData, [id]: value });
   };
 
   const addStock = () => {
-    //재고타입 추가시 배열에 새 배열 추가
     setStock([...stock, []]);
   };
 
   const deleteStock = (idx) => {
-    //재고 삭제하기
     const newStock = stock.filter((item, index) => index !== idx);
     setStock(newStock);
   };
 
   const handleSizeChange = (value, index) => {
-    //  재고 사이즈 변환하기
     const newStock = [...stock];
     newStock[index][0] = value;
     setStock(newStock);
   };
 
   const handleStockChange = (value, index) => {
-    //재고 수량 변환하기
     const newStock = [...stock];
     newStock[index][1] = value;
     setStock(newStock);
@@ -103,21 +105,25 @@ const NewItemDialog = ({ mode, showDialog, setShowDialog }) => {
   };
 
   const uploadImage = (url) => {
-    //이미지 업로드
     setFormData({ ...formData, image: url });
   };
 
   useEffect(() => {
     if (showDialog) {
       if (mode === "edit") {
-        // 선택된 데이터값 불러오기 (재고 형태 객체에서 어레이로 바꾸기)
+        // 선택된 데이터값 불러오기
+        setFormData(selectedProduct);
+        const stockArray = Object.keys(selectedProduct.stock).map((size) => [
+          size,
+          selectedProduct.stock[size],
+        ]);
+        setStock(stockArray);
       } else {
-        // 초기화된 값 불러오기
+        setFormData({ ...InitialFormData });
+        setStock([]);
       }
     }
   }, [showDialog]);
-
-  //에러나면 토스트 메세지 보여주기
 
   return (
     <Modal show={showDialog} onHide={handleClose}>
@@ -186,12 +192,11 @@ const NewItemDialog = ({ mode, showDialog, setShowDialog }) => {
                     required
                     defaultValue={item[0] ? item[0].toLowerCase() : ""}
                   >
-                    <option value="" disabled selected hidden>
+                    <option value="" disabled hidden>
                       Please Choose...
                     </option>
                     {SIZE.map((item, index) => (
                       <option
-                        invalid="true"
                         value={item.toLowerCase()}
                         disabled={stock.some(
                           (size) => size[0] === item.toLowerCase()
@@ -231,13 +236,14 @@ const NewItemDialog = ({ mode, showDialog, setShowDialog }) => {
         <Form.Group className="mb-3" controlId="Image" required>
           <Form.Label>Image</Form.Label>
           <CloudinaryUploadWidget uploadImage={uploadImage} />
-
-          <img
-            id="uploadedimage"
-            src={formData.image}
-            className="upload-image mt-2"
-            alt="uploadedimage"
-          ></img>
+          {formData.image && (
+            <img
+              id="uploadedimage"
+              src={formData.image}
+              className="upload-image mt-2"
+              alt="uploadedimage"
+            ></img>
+          )}
         </Form.Group>
 
         <Row className="mb-3">
@@ -284,15 +290,9 @@ const NewItemDialog = ({ mode, showDialog, setShowDialog }) => {
             </Form.Select>
           </Form.Group>
         </Row>
-        {mode === "new" ? (
-          <Button variant="primary" type="submit">
-            Submit
-          </Button>
-        ) : (
-          <Button variant="primary" type="submit">
-            Edit
-          </Button>
-        )}
+        <Button variant="primary" type="submit">
+          {mode === "new" ? "Submit" : "Edit"}
+        </Button>
       </Form>
     </Modal>
   );
