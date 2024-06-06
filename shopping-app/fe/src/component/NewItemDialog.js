@@ -25,9 +25,7 @@ const NewItemDialog = ({
 }) => {
   const selectedProduct = useSelector((state) => state.product.selectedProduct);
   const { error } = useSelector((state) => state.product);
-  const [formData, setFormData] = useState(
-    mode === "new" ? { ...InitialFormData } : selectedProduct
-  );
+  const [formData, setFormData] = useState({ ...InitialFormData });
   const [stock, setStock] = useState([]);
   const dispatch = useDispatch();
   const [stockError, setStockError] = useState(false);
@@ -50,14 +48,14 @@ const NewItemDialog = ({
       setShowDialog(false);
       refreshProducts(); // 새로고침 없이 리스트 업데이트
     } else {
-      // 상품 수정하기 로직 추가
-      dispatch(
+      await dispatch(
         productActions.editProduct(
           { ...formData, stock: totalStock },
           selectedProduct._id
         )
       );
       setShowDialog(false);
+      refreshProducts(); // 새로고침 없이 리스트 업데이트
     }
   };
 
@@ -67,41 +65,34 @@ const NewItemDialog = ({
   };
 
   const addStock = () => {
-    setStock([...stock, []]);
+    setStock([...stock, ["", ""]]);
   };
 
   const deleteStock = (idx) => {
-    const newStock = stock.filter((item, index) => index !== idx);
+    const newStock = stock.filter((_, index) => index !== idx);
     setStock(newStock);
   };
 
-  const handleSizeChange = (value, index) => {
+  const handleSizeChange = (event, index) => {
     const newStock = [...stock];
-    newStock[index][0] = value;
+    newStock[index][0] = event.target.value;
     setStock(newStock);
   };
 
-  const handleStockChange = (value, index) => {
+  const handleStockChange = (event, index) => {
     const newStock = [...stock];
-    newStock[index][1] = value;
+    newStock[index][1] = event.target.value;
     setStock(newStock);
   };
 
   const onHandleCategory = (event) => {
-    if (formData.category.includes(event.target.value)) {
-      const newCategory = formData.category.filter(
-        (item) => item !== event.target.value
-      );
-      setFormData({
-        ...formData,
-        category: [...newCategory],
-      });
-    } else {
-      setFormData({
-        ...formData,
-        category: [...formData.category, event.target.value],
-      });
-    }
+    const value = event.target.value;
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      category: prevFormData.category.includes(value)
+        ? prevFormData.category.filter((item) => item !== value)
+        : [...prevFormData.category, value],
+    }));
   };
 
   const uploadImage = (url) => {
@@ -110,29 +101,33 @@ const NewItemDialog = ({
 
   useEffect(() => {
     if (showDialog) {
-      if (mode === "edit") {
-        // 선택된 데이터값 불러오기
-        setFormData(selectedProduct);
-        const stockArray = Object.keys(selectedProduct.stock).map((size) => [
-          size,
-          selectedProduct.stock[size],
-        ]);
+      if (mode === "edit" && selectedProduct) {
+        console.log("Editing product:", selectedProduct);
+        const productData = { ...selectedProduct };
+        delete productData._id;
+        setFormData(productData);
+        const stockArray = Object.entries(selectedProduct.stock).map(
+          ([size, count]) => [size, count]
+        );
         setStock(stockArray);
-      } else {
+      } else if (mode === "new") {
         setFormData({ ...InitialFormData });
         setStock([]);
       }
     }
-  }, [showDialog]);
+  }, [showDialog, mode, selectedProduct]);
+
+  useEffect(() => {
+    console.log("formData:", formData);
+    console.log("stock:", stock);
+  }, [formData, stock]);
 
   return (
     <Modal show={showDialog} onHide={handleClose}>
       <Modal.Header closeButton>
-        {mode === "new" ? (
-          <Modal.Title>Create New Product</Modal.Title>
-        ) : (
-          <Modal.Title>Edit Product</Modal.Title>
-        )}
+        <Modal.Title>
+          {mode === "new" ? "Create New Product" : "Edit Product"}
+        </Modal.Title>
       </Modal.Header>
 
       <Form className="form-container" onSubmit={handleSubmit}>
@@ -141,10 +136,10 @@ const NewItemDialog = ({
             <Form.Label>Sku</Form.Label>
             <Form.Control
               onChange={handleChange}
-              type="string"
+              type="text"
               placeholder="Enter Sku"
               required
-              value={formData.sku}
+              value={formData.sku || ""}
             />
           </Form.Group>
 
@@ -152,10 +147,10 @@ const NewItemDialog = ({
             <Form.Label>Name</Form.Label>
             <Form.Control
               onChange={handleChange}
-              type="string"
+              type="text"
               placeholder="Name"
               required
-              value={formData.name}
+              value={formData.name || ""}
             />
           </Form.Group>
         </Row>
@@ -163,12 +158,12 @@ const NewItemDialog = ({
         <Form.Group className="mb-3" controlId="description">
           <Form.Label>Description</Form.Label>
           <Form.Control
-            type="string"
+            type="text"
             placeholder="Description"
             as="textarea"
             onChange={handleChange}
             rows={3}
-            value={formData.description}
+            value={formData.description || ""}
             required
           />
         </Form.Group>
@@ -186,36 +181,32 @@ const NewItemDialog = ({
               <Row key={index}>
                 <Col sm={4}>
                   <Form.Select
-                    onChange={(event) =>
-                      handleSizeChange(event.target.value, index)
-                    }
+                    onChange={(event) => handleSizeChange(event, index)}
                     required
-                    defaultValue={item[0] ? item[0].toLowerCase() : ""}
+                    value={item[0] || ""}
                   >
                     <option value="" disabled hidden>
                       Please Choose...
                     </option>
-                    {SIZE.map((item, index) => (
+                    {SIZE.map((size, idx) => (
                       <option
-                        value={item.toLowerCase()}
+                        value={size.toLowerCase()}
                         disabled={stock.some(
-                          (size) => size[0] === item.toLowerCase()
+                          (s) => s[0] === size.toLowerCase()
                         )}
-                        key={index}
+                        key={idx}
                       >
-                        {item}
+                        {size}
                       </option>
                     ))}
                   </Form.Select>
                 </Col>
                 <Col sm={6}>
                   <Form.Control
-                    onChange={(event) =>
-                      handleStockChange(event.target.value, index)
-                    }
+                    onChange={(event) => handleStockChange(event, index)}
                     type="number"
                     placeholder="number of stock"
-                    value={item[1]}
+                    value={item[1] || ""}
                     required
                   />
                 </Col>
@@ -233,7 +224,7 @@ const NewItemDialog = ({
           </div>
         </Form.Group>
 
-        <Form.Group className="mb-3" controlId="Image" required>
+        <Form.Group className="mb-3" controlId="image">
           <Form.Label>Image</Form.Label>
           <CloudinaryUploadWidget uploadImage={uploadImage} />
           {formData.image && (
@@ -242,7 +233,7 @@ const NewItemDialog = ({
               src={formData.image}
               className="upload-image mt-2"
               alt="uploadedimage"
-            ></img>
+            />
           )}
         </Form.Group>
 
@@ -250,7 +241,7 @@ const NewItemDialog = ({
           <Form.Group as={Col} controlId="price">
             <Form.Label>Price</Form.Label>
             <Form.Control
-              value={formData.price}
+              value={formData.price || 0}
               required
               onChange={handleChange}
               type="number"
@@ -264,7 +255,7 @@ const NewItemDialog = ({
               as="select"
               multiple
               onChange={onHandleCategory}
-              value={formData.category}
+              value={formData.category || []}
               required
             >
               {CATEGORY.map((item, idx) => (
@@ -278,7 +269,7 @@ const NewItemDialog = ({
           <Form.Group as={Col} controlId="status">
             <Form.Label>Status</Form.Label>
             <Form.Select
-              value={formData.status}
+              value={formData.status || "active"}
               onChange={handleChange}
               required
             >
